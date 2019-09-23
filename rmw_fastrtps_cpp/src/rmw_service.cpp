@@ -36,10 +36,11 @@
 #include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
 #include "rmw_fastrtps_shared_cpp/qos.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
 #include "rmw_fastrtps_cpp/identifier.hpp"
 
-#include "./type_support_common.hpp"
+#include "type_support_common.hpp"
 
 using Domain = eprosima::fastrtps::Domain;
 using Participant = eprosima::fastrtps::Participant;
@@ -74,7 +75,7 @@ rmw_create_service(
     return nullptr;
   }
 
-  const CustomParticipantInfo * impl = static_cast<CustomParticipantInfo *>(node->data);
+  const CustomParticipantInfo * impl = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   if (!impl) {
     RMW_SET_ERROR_MSG("node impl is null");
     return nullptr;
@@ -137,7 +138,16 @@ rmw_create_service(
     subscriberParam.historyMemoryPolicy =
       eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
   }
-
+  if (node->name || node->namespace_) {
+    get_group_data_qos(
+      node->name,
+      node->namespace_,
+      subscriberParam.qos.m_groupData);
+    get_group_data_qos(
+      node->name,
+      node->namespace_,
+      publisherParam.qos.m_groupData);
+  }
   subscriberParam.topic.topicKind = eprosima::fastrtps::rtps::NO_KEY;
   subscriberParam.topic.topicDataType = request_type_name;
   subscriberParam.topic.topicName = _create_topic_name(

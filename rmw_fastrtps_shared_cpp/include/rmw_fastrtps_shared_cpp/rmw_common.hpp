@@ -85,11 +85,10 @@ __rmw_set_log_severity(rmw_log_severity_t severity);
 RMW_FASTRTPS_SHARED_CPP_PUBLIC
 rmw_node_t *
 __rmw_create_node(
+  rmw_context_t * context,
   const char * identifier,
   const char * name,
-  const char * namespace_,
-  size_t domain_id,
-  const rmw_node_security_options_t * security_options);
+  const char * namespace_);
 
 RMW_FASTRTPS_SHARED_CPP_PUBLIC
 rmw_ret_t

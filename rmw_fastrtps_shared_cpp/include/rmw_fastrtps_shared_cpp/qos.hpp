@@ -1,3 +1,4 @@
+// Copyright 2019 Open Source Robotics Foundation, Inc.
 // Copyright 2016-2018 Proyectos y Sistemas de Mantenimiento SL (eProsima).
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +16,13 @@
 #ifndef RMW_FASTRTPS_SHARED_CPP__QOS_HPP_
 #define RMW_FASTRTPS_SHARED_CPP__QOS_HPP_
 
+#include "fastrtps/attributes/PublisherAttributes.h"
+#include "fastrtps/attributes/SubscriberAttributes.h"
+#include "fastrtps/qos/QosPolicies.h"
+
 #include "rmw/rmw.h"
 
-#include "./visibility_control.h"
+#include "visibility_control.h"
 
 namespace eprosima
 {
@@ -43,6 +48,13 @@ bool
 get_datawriter_qos(
   const rmw_qos_profile_t & qos_policies,
   eprosima::fastrtps::PublisherAttributes & pattr);
+
+RMW_FASTRTPS_SHARED_CPP_PUBLIC
+rmw_ret_t
+get_group_data_qos(
+  const char * node_name,
+  const char * node_namespace,
+  eprosima::fastrtps::GroupDataQosPolicy & group_data);
 
 template<typename AttributeT>
 void

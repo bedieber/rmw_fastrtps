@@ -53,7 +53,9 @@ add_library(rmw_fastrtps_cpp
   src/get_publisher.cpp
   src/get_service.cpp
   src/get_subscriber.cpp
+  src/listener_thread.cpp
   src/identifier.cpp
+  src/publisher.cpp
   src/rmw_logging.cpp
   src/rmw_client.cpp
   src/rmw_compare_gids_equal.cpp
@@ -81,8 +83,11 @@ add_library(rmw_fastrtps_cpp
   src/rmw_wait.cpp
   src/rmw_wait_set.cpp
   src/serialization_format.cpp
+  src/subscription.cpp
   src/type_support_common.cpp
   src/gid__type_support.cpp
+  src/node_custom_info__type_support.cpp
+  src/participant_custom_info__type_support.cpp
 )
 target_link_libraries(rmw_fastrtps_cpp
   fastcdr fastrtps)

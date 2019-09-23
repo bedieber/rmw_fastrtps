@@ -1,4 +1,4 @@
-// Copyright 2016-2018 Proyectos y Sistemas de Mantenimiento SL (eProsima).
+// Copyright 2019 Open Source Robotics Foundation, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,43 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <map>
-#include <string>
-#include <vector>
-#include <mutex>
-#include <numeric>
+#ifndef RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP_
+#define RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP_
 
-#include "rcutils/logging_macros.h"
-
-#include "rmw/error_handling.h"
-#include "rmw/rmw.h"
 #include "rmw/types.h"
 
-#include "demangle.hpp"
+#include "rmw_dds_common/context.hpp"
+
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
-#include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
-#include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
 
-namespace rmw_fastrtps_shared_cpp
-{
+namespace rmw_fastrtps_shared_cpp {
+
+CustomParticipantInfo *
+create_participant(
+  const char * identifier,
+  const size_t domain_id,
+  const rmw_security_options_t * security_options,
+  rmw_dds_common::Context * common_context);
 
 rmw_ret_t
-__rmw_count_publishers(
-  const char * identifier,
-  const rmw_node_t * node,
-  const char * topic_name,
-  size_t * count)
-{
-  return RMW_RET_OK;
-}
-
-rmw_ret_t
-__rmw_count_subscribers(
-  const char * identifier,
-  const rmw_node_t * node,
-  const char * topic_name,
-  size_t * count)
-{
-  return RMW_RET_OK;
-}
+destroy_participant(CustomParticipantInfo * info);
 }  // namespace rmw_fastrtps_shared_cpp
+
+#endif  // RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP

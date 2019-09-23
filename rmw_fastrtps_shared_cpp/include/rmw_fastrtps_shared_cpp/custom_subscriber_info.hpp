@@ -85,7 +85,6 @@ public:
 #else
     uint64_t unread_count = sub->get_unread_count();
 #endif
-
     std::lock_guard<std::mutex> lock(internalMutex_);
 
     // the change to liveliness_lost_count_ needs to be mutually exclusive with

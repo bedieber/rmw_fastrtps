@@ -1,3 +1,4 @@
+// Copyright 2019 Open Source Robotics Foundation, Inc.
 // Copyright 2016-2018 Proyectos y Sistemas de Mantenimiento SL (eProsima).
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -161,6 +162,38 @@ bool
 is_valid_qos(const rmw_qos_profile_t & /* qos_policies */)
 {
   return true;
+}
+
+rmw_ret_t
+get_group_data_qos(
+  const char * node_name,
+  const char * node_namespace,
+  eprosima::fastrtps::GroupDataQosPolicy & group_data)
+{
+  if (!node_name) {
+    RMW_SET_ERROR_MSG("node_name is null");
+    return RMW_RET_ERROR;
+  }
+  if (!node_namespace) {
+    RMW_SET_ERROR_MSG("node_namespace is null");
+    return RMW_RET_ERROR;
+  }
+  size_t length = strlen(node_name) + strlen("name=;") +
+    strlen(node_namespace) + strlen("namespace=;") + 1;
+  std::vector<eprosima::fastrtps::rtps::octet> octet_vector;
+  octet_vector.resize(length);
+  int written = snprintf(
+    reinterpret_cast<char *>(octet_vector.data()),
+    length,
+    "name=%s;namespace=%s;",
+    node_name,
+    node_namespace);
+  if (written < 0 || written > static_cast<int>(length) - 1) {
+    RMW_SET_ERROR_MSG("failed to populate group_data buffer");
+    return RMW_RET_ERROR;
+  }
+  group_data.setValue(octet_vector);
+  return RMW_RET_OK;
 }
 
 template<typename AttributeT>

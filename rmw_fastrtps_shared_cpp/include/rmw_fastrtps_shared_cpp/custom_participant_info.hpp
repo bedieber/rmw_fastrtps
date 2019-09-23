@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "fastrtps/rtps/common/InstanceHandle.h"
 #include "fastrtps/attributes/ParticipantAttributes.h"
 #include "fastrtps/participant/Participant.h"
 #include "fastrtps/participant/ParticipantListener.h"
@@ -30,9 +31,14 @@
 #include "rmw/impl/cpp/key_value.hpp"
 #include "rmw/rmw.h"
 
-#include "rmw_common.hpp"
+#include "rmw_dds_common/context.hpp"
+#include "rmw_dds_common/node_cache.hpp"
+#include "rmw_dds_common/topic_cache.hpp"
 
-#include "topic_cache.hpp"
+#include "rmw_fastrtps_shared_cpp/create_rmw_gid.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+
+using rmw_dds_common::operator<<;
 
 class ParticipantListener;
 
@@ -53,8 +59,14 @@ typedef struct CustomParticipantInfo
 class ParticipantListener : public eprosima::fastrtps::ParticipantListener
 {
 public:
-  explicit ParticipantListener(rmw_guard_condition_t * graph_guard_condition)
-  : graph_guard_condition_(graph_guard_condition)
+  using TopicCache = rmw_dds_common::TopicCache;
+  using NodeCache = rmw_dds_common::NodeCache;
+
+  explicit ParticipantListener(
+    rmw_guard_condition_t * graph_guard_condition,
+    rmw_dds_common::Context * context)
+  : context(context),
+    graph_guard_condition_(graph_guard_condition)
   {}
 
   void onParticipantDiscovery(
@@ -68,73 +80,13 @@ public:
     {
       return;
     }
-
-    std::lock_guard<std::mutex> guard(names_mutex_);
     if (eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT == info.status) {
-      // ignore already known GUIDs
-      if (discovered_names.find(info.info.m_guid) == discovered_names.end()) {
-        auto map = rmw::impl::cpp::parse_key_value(info.info.m_userData);
-        auto name_found = map.find("name");
-        auto ns_found = map.find("namespace");
-
-        std::string name;
-        if (name_found != map.end()) {
-          name = std::string(name_found->second.begin(), name_found->second.end());
-        }
-
-        std::string namespace_;
-        if (ns_found != map.end()) {
-          namespace_ = std::string(ns_found->second.begin(), ns_found->second.end());
-        }
-
-        if (name.empty()) {
-          // use participant name if no name was found in the user data
-          name = info.info.m_participantName;
-        }
-        // ignore discovered participants without a name
-        if (!name.empty()) {
-          discovered_names[info.info.m_guid] = name;
-          discovered_namespaces[info.info.m_guid] = namespace_;
-        }
-      }
+      context->node_cache.add_gid(rmw_fastrtps_shared_cpp::create_rmw_gid(
+        graph_guard_condition_->implementation_identifier, info.info.m_guid));
     } else {
-      {
-        auto it = discovered_names.find(info.info.m_guid);
-        // only consider known GUIDs
-        if (it != discovered_names.end()) {
-          discovered_names.erase(it);
-        }
-      }
-      {
-        auto it = discovered_namespaces.find(info.info.m_guid);
-        // only consider known GUIDs
-        if (it != discovered_namespaces.end()) {
-          discovered_namespaces.erase(it);
-        }
-      }
+      context->node_cache.delete_node_names(rmw_fastrtps_shared_cpp::create_rmw_gid(
+        graph_guard_condition_->implementation_identifier, info.info.m_guid));
     }
-  }
-
-  std::vector<std::string> get_discovered_names() const
-  {
-    std::lock_guard<std::mutex> guard(names_mutex_);
-    std::vector<std::string> names(discovered_names.size());
-    size_t i = 0;
-    for (auto it : discovered_names) {
-      names[i++] = it.second;
-    }
-    return names;
-  }
-
-  std::vector<std::string> get_discovered_namespaces() const
-  {
-    std::lock_guard<std::mutex> guard(names_mutex_);
-    std::vector<std::string> namespaces(discovered_namespaces.size());
-    size_t i = 0;
-    for (auto it : discovered_namespaces) {
-      namespaces[i++] = it.second;
-    }
-    return namespaces;
   }
 
   void onSubscriberDiscovery(
@@ -160,20 +112,42 @@ public:
   }
 
   template<class T>
-  void process_discovery_info(T & proxyData, bool is_alive, bool is_reader)
+  void
+  process_discovery_info(T & proxyData, bool is_alive, bool is_reader)
   {
     auto & topic_cache =
-      is_reader ? reader_topic_cache : writer_topic_cache;
+      is_reader ? context->reader_topic_cache : context->writer_topic_cache;
 
     bool trigger;
+    const auto & group_data = proxyData.m_qos.m_groupData.getValue();
+    const auto & map = rmw::impl::cpp::parse_key_value(group_data);
+    const auto & name_found = map.find("name");
+    const auto & ns_found = map.find("namespace");
+    if (name_found == map.end() || ns_found == map.end()) {
+      RCUTILS_LOG_DEBUG_NAMED("rmw_fastrtps_cpp", "Unexpected group data");
+      return;
+    }
+    std::string name(name_found->second.begin(), name_found->second.end());
+    std::string ns(ns_found->second.begin(), ns_found->second.end());
     {
-      std::lock_guard<std::mutex> guard(topic_cache.getMutex());
       if (is_alive) {
-        trigger = topic_cache().addTopic(proxyData.RTPSParticipantKey(),
-            proxyData.topicName().to_string(), proxyData.typeName().to_string());
+        trigger = topic_cache.add_topic(
+          rmw_fastrtps_shared_cpp::create_rmw_gid(
+            graph_guard_condition_->implementation_identifier,
+            iHandle2GUID(proxyData.RTPSParticipantKey())),
+          ns,
+          name,
+          proxyData.topicName().to_string(),
+          proxyData.typeName().to_string());
       } else {
-        trigger = topic_cache().removeTopic(proxyData.RTPSParticipantKey(),
-            proxyData.topicName().to_string(), proxyData.typeName().to_string());
+        trigger = topic_cache.remove_topic(
+          rmw_fastrtps_shared_cpp::create_rmw_gid(
+            graph_guard_condition_->implementation_identifier,
+            iHandle2GUID(proxyData.RTPSParticipantKey())),
+          ns,
+          name,
+          proxyData.topicName().to_string(),
+          proxyData.typeName().to_string());
       }
     }
     if (trigger) {
@@ -187,8 +161,7 @@ public:
   mutable std::mutex names_mutex_;
   guid_map_t discovered_names RCPPUTILS_TSA_GUARDED_BY(names_mutex_);
   guid_map_t discovered_namespaces RCPPUTILS_TSA_GUARDED_BY(names_mutex_);
-  LockedObject<TopicCache> reader_topic_cache;
-  LockedObject<TopicCache> writer_topic_cache;
+  rmw_dds_common::Context * context;
   rmw_guard_condition_t * graph_guard_condition_;
 };
 
