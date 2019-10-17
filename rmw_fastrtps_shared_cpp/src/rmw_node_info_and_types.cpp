@@ -36,8 +36,9 @@
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 #include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
-#include "rmw_dds_common/topic_cache.hpp"
+#include "rmw_dds_common/context.hpp"
 
 // TODO(ivanpauno): IMPLEMENT THIS
 
@@ -45,6 +46,107 @@ namespace rmw_fastrtps_shared_cpp
 {
 
 constexpr char kLoggerTag[] = "rmw_fastrtps_shared_cpp";
+
+/**
+ * Validate the input data of node_info_and_types functions.
+ *
+ * @return RMW_RET_INVALID_ARGUMENT for null input args
+ * @return RMW_RET_ERROR if identifier is not the same as the input node
+ * @return RMW_RET_OK if all input is valid
+ */
+rmw_ret_t __validate_input(
+  const char * identifier,
+  const rmw_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * node_name,
+  const char * node_namespace,
+  rmw_names_and_types_t * topic_names_and_types)
+{
+  if (!allocator) {
+    RMW_SET_ERROR_MSG("allocator is null");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  if (!node) {
+    RMW_SET_ERROR_MSG("null node handle");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+
+  if (!node_name) {
+    RMW_SET_ERROR_MSG("null node name");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+
+  if (!node_namespace) {
+    RMW_SET_ERROR_MSG("null node namespace");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+
+  rmw_ret_t ret = rmw_names_and_types_check_zero(topic_names_and_types);
+  if (ret != RMW_RET_OK) {
+    return ret;
+  }
+
+  // Get participant pointer from node
+  if (node->implementation_identifier != identifier) {
+    RMW_SET_ERROR_MSG("node handle not from this implementation");
+    return RMW_RET_ERROR;
+  }
+  return RMW_RET_OK;
+}
+
+using RetrieveTopicCache = const rmw_dds_common::TopicCache & (*)(rmw_dds_common::Context & common_context);
+using DemangleFunction = std::string (*)(const std::string &);
+using MangleFunction = DemangleFunction;
+
+rmw_ret_t
+__rmw_get_topic_names_and_types_by_node(
+  const char * identifier,
+  const rmw_node_t * node,
+  rcutils_allocator_t * allocator,
+  const char * node_name,
+  const char * node_namespace,
+  DemangleFunction demangle_topic,
+  DemangleFunction demangle_type,
+  bool no_demangle,
+  RetrieveTopicCache retrieve_topic_cache,
+  rmw_names_and_types_t * topic_names_and_types)
+{
+  rmw_ret_t valid_input = __validate_input(identifier, node, allocator, node_name,
+      node_namespace, topic_names_and_types);
+  if (valid_input != RMW_RET_OK) {
+    return valid_input;
+  }
+  auto impl = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+
+  DemangleFunction no_op{ [](const std::string & x){ return x; } };
+  if (no_demangle) {
+    demangle_topic = no_op;
+    demangle_type = no_op;
+  }
+
+  const rmw_dds_common::TopicCache & topic_cache = retrieve_topic_cache(*common_context);
+  return topic_cache.get_names_and_types_by_node(
+    common_context->gid,
+    node_name,
+    node_namespace,
+    demangle_topic,
+    demangle_type,
+    allocator,
+    topic_names_and_types);
+}
+
+const rmw_dds_common::TopicCache &
+__retrieve_reader_topic_cache(rmw_dds_common::Context & common_context)
+{
+  return common_context.reader_topic_cache;
+}
+
+const rmw_dds_common::TopicCache &
+__retrieve_writer_topic_cache(rmw_dds_common::Context & common_context)
+{
+  return common_context.writer_topic_cache;
+}
 
 rmw_ret_t
 __rmw_get_subscriber_names_and_types_by_node(
@@ -56,7 +158,17 @@ __rmw_get_subscriber_names_and_types_by_node(
   bool no_demangle,
   rmw_names_and_types_t * topic_names_and_types)
 {
-  return RMW_RET_OK;
+  return __rmw_get_topic_names_and_types_by_node(
+    identifier,
+    node,
+    allocator,
+    node_name,
+    node_namespace,
+    _demangle_ros_topic_from_topic,
+    _demangle_if_ros_type,
+    no_demangle,
+    __retrieve_reader_topic_cache,
+    topic_names_and_types);
 }
 
 rmw_ret_t
@@ -69,7 +181,17 @@ __rmw_get_publisher_names_and_types_by_node(
   bool no_demangle,
   rmw_names_and_types_t * topic_names_and_types)
 {
-  return RMW_RET_OK;
+  return __rmw_get_topic_names_and_types_by_node(
+    identifier,
+    node,
+    allocator,
+    node_name,
+    node_namespace,
+    _demangle_ros_topic_from_topic,
+    _demangle_if_ros_type,
+    no_demangle,
+    __retrieve_writer_topic_cache,
+    topic_names_and_types);
 }
 
 rmw_ret_t
@@ -81,7 +203,17 @@ __rmw_get_service_names_and_types_by_node(
   const char * node_namespace,
   rmw_names_and_types_t * service_names_and_types)
 {
-  return RMW_RET_OK;
+  return __rmw_get_topic_names_and_types_by_node(
+    identifier,
+    node,
+    allocator,
+    node_name,
+    node_namespace,
+    _demangle_service_request_from_topic,
+    _demangle_service_type_only,
+    false,
+    __retrieve_reader_topic_cache,
+    service_names_and_types);
 }
 
 rmw_ret_t
@@ -93,7 +225,17 @@ __rmw_get_client_names_and_types_by_node(
   const char * node_namespace,
   rmw_names_and_types_t * service_names_and_types)
 {
-  return RMW_RET_OK;
+  return __rmw_get_topic_names_and_types_by_node(
+    identifier,
+    node,
+    allocator,
+    node_name,
+    node_namespace,
+    _demangle_service_reply_from_topic,
+    _demangle_service_type_only,
+    false,
+    __retrieve_reader_topic_cache,
+    service_names_and_types);
 }
 
 }  // namespace rmw_fastrtps_shared_cpp
