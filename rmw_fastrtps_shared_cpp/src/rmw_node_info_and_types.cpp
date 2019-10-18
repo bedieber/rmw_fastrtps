@@ -32,15 +32,13 @@
 #include "rmw/names_and_types.h"
 #include "rmw/rmw.h"
 
+#include "rmw_dds_common/context.hpp"
+
 #include "demangle.hpp"
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 #include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
-
-#include "rmw_dds_common/context.hpp"
-
-// TODO(ivanpauno): IMPLEMENT THIS
 
 namespace rmw_fastrtps_shared_cpp
 {

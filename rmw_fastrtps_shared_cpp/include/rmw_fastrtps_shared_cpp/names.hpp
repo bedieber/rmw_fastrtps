@@ -21,21 +21,19 @@
 
 /// Construct a topic name according to proper conventions.
 /**
-  * \param[in] qos_profile The QoS profile for the topic.
   * \param[in] prefix Required prefix for topic name.
   * \param[in] base Required name of the topic.
   * \param[in] suffix Optional suffix for topic name.
   */
 inline
-eprosima::fastrtps::string_255
-_create_topic_name(
-  const rmw_qos_profile_t * qos_profile,
+std::string
+_mangle_topic_name(
   const char * prefix,
   const char * base,
   const char * suffix = nullptr)
 {
   std::ostringstream topicName;
-  if (!qos_profile->avoid_ros_namespace_conventions && prefix) {
+  if (prefix) {
     topicName << prefix;
   }
   topicName << base;
@@ -43,6 +41,27 @@ _create_topic_name(
     topicName << suffix;
   }
   return topicName.str();
+}
+
+/// Construct a topic name according to proper conventions.
+/**
+  * \param[in] qos_profile The QoS profile for the topic.
+  * \param[in] prefix Required prefix for topic name.
+  * \param[in] base Required name of the topic.
+  * \param[in] suffix Optional suffix for topic name.
+  */
+inline
+std::string
+_create_topic_name(
+  const rmw_qos_profile_t * qos_profile,
+  const char * prefix,
+  const char * base,
+  const char * suffix = nullptr)
+{
+  if (qos_profile->avoid_ros_namespace_conventions) {
+    prefix = nullptr;
+  }
+  return _mangle_topic_name(prefix, base, suffix);
 }
 
 #endif  // RMW_FASTRTPS_SHARED_CPP__NAMES_HPP_

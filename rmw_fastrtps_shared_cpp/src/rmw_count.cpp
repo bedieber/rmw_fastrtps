@@ -24,13 +24,36 @@
 #include "rmw/rmw.h"
 #include "rmw/types.h"
 
-#include "demangle.hpp"
+#include "rmw_dds_common/context.hpp"
+#include "rmw_dds_common/topic_cache.hpp"
+
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
-#include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
+#include "rmw_fastrtps_shared_cpp/names.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
 namespace rmw_fastrtps_shared_cpp
 {
+
+rmw_ret_t
+__rmw_count(
+  const char * identifier,
+  const rmw_node_t * node,
+  const char * topic_name,
+  size_t * count,
+  const rmw_dds_common::TopicCache & topic_cache)
+{
+  if (!node) {
+    RMW_SET_ERROR_MSG("null node handle");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  if (node->implementation_identifier != identifier) {
+    RMW_SET_ERROR_MSG("node handle not from this implementation");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  std::string mangled_topic_name = _mangle_topic_name(ros_topic_prefix, topic_name);
+  return topic_cache.get_count(mangled_topic_name, count);
+}
 
 rmw_ret_t
 __rmw_count_publishers(
@@ -39,7 +62,13 @@ __rmw_count_publishers(
   const char * topic_name,
   size_t * count)
 {
-  return RMW_RET_OK;
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  return __rmw_count(
+    identifier,
+    node,
+    topic_name,
+    count,
+    common_context->writer_topic_cache);
 }
 
 rmw_ret_t
@@ -49,6 +78,11 @@ __rmw_count_subscribers(
   const char * topic_name,
   size_t * count)
 {
-  return RMW_RET_OK;
-}
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  return __rmw_count(
+    identifier,
+    node,
+    topic_name,
+    count,
+    common_context->reader_topic_cache);}
 }  // namespace rmw_fastrtps_shared_cpp
