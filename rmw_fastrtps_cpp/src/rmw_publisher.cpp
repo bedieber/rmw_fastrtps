@@ -78,8 +78,14 @@ rmw_create_publisher(
   }
 
   return rmw_fastrtps_cpp::create_publisher(
-    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info), type_supports, topic_name,
-    qos_policies, node->namespace_, node->name, false, true);
+    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info),
+    type_supports,
+    topic_name,
+    qos_policies,
+    node->namespace_,
+    node->name,
+    false,
+    true);
 }
 
 rmw_ret_t

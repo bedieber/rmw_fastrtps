@@ -15,6 +15,8 @@
 #ifndef RMW_FASTRTPS_SHARED_CPP__NAMES_HPP_
 #define RMW_FASTRTPS_SHARED_CPP__NAMES_HPP_
 
+#include <string>
+
 #include "fastrtps/utils/fixed_size_string.hpp"
 #include "rmw/types.h"
 #include "namespace_prefix.hpp"

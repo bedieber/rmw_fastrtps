@@ -17,13 +17,11 @@
 
 extern "C"
 {
-
 typedef struct rmw_context_impl_t
 {
   void * common;
   void * participant_info;
 } rmw_context_impl_t;
-
 }  // extern "C"
 
 #endif  // RMW_FASTRTPS_SHARED_CPP__RMW_CONTEXT_IMPL_H_

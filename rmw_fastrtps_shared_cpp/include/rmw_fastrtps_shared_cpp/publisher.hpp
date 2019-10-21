@@ -29,4 +29,4 @@ destroy_publisher(
 
 }  // namespace rmw_fastrtps_shared_cpp
 
-#endif  // RMW_FASTRTPS_CPP__PUBLISHER_HPP_
+#endif  // RMW_FASTRTPS_SHARED_CPP__PUBLISHER_HPP_

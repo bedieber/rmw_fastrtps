@@ -39,7 +39,6 @@
 
 extern "C"
 {
-
 rmw_ret_t
 rmw_init_options_init(rmw_init_options_t * init_options, rcutils_allocator_t allocator)
 {
@@ -116,7 +115,8 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
     goto fail;
   }
 
-  common_context = static_cast<rmw_dds_common::Context *>(rmw_allocate(sizeof(rmw_dds_common::Context)));
+  common_context =
+    static_cast<rmw_dds_common::Context *>(rmw_allocate(sizeof(rmw_dds_common::Context)));
   if (nullptr == common_context) {
     goto fail;
   }
@@ -138,7 +138,7 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
   }
   context->impl->participant_info = static_cast<void *>(participant_info);
 
-  qos.avoid_ros_namespace_conventions = false; // Change it to true after testing
+  qos.avoid_ros_namespace_conventions = false;  // Change it to true after testing
   qos.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
   qos.depth = 1;
   qos.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
@@ -191,25 +191,25 @@ fail:
     }
     if (common_context->pub) {
       ret = rmw_fastrtps_shared_cpp::destroy_publisher(
-      eprosima_fastrtps_identifier,
-      participant_info,
-      common_context->pub);
+        eprosima_fastrtps_identifier,
+        participant_info,
+        common_context->pub);
       if (RMW_RET_OK != ret) {
         return ret;
       }
     }
-    
+
     if (common_context->sub) {
       ret = rmw_fastrtps_shared_cpp::destroy_subscription(
-      eprosima_fastrtps_identifier,
-      participant_info,
-      common_context->sub);
+        eprosima_fastrtps_identifier,
+        participant_info,
+        common_context->sub);
       if (RMW_RET_OK != ret) {
         return ret;
       }
     }
   }
-  
+
   if (participant_info) {
     ret = rmw_fastrtps_shared_cpp::destroy_participant(participant_info);
     if (RMW_RET_OK != ret) {
@@ -244,7 +244,6 @@ rmw_context_fini(rmw_context_t * context)
     context->implementation_identifier,
     eprosima_fastrtps_identifier,
     return RMW_RET_INCORRECT_RMW_IMPLEMENTATION);
-
   rmw_ret_t ret = rmw_fastrtps_cpp::join_listener_thread(context);
   if (RMW_RET_OK != ret) {
     return ret;

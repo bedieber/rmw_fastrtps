@@ -115,23 +115,23 @@ __rmw_create_node(
     // In that case, the last message published is not accurate.
     std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
     if (RMW_RET_OK != node_cache.add_node_name(
-      common_context->gid,
-      name,
-      namespace_))
+        common_context->gid,
+        name,
+        namespace_))
     {
       goto fail;
     }
     if (RMW_RET_OK != node_cache.get_participant_state_message(
-      common_context->gid,
-      participant_info))
+        common_context->gid,
+        participant_info))
     {
       goto fail;
     }
     if (RMW_RET_OK != __rmw_publish(
-      identifier,
-      common_context->pub,
-      static_cast<void *>(&participant_info),
-      nullptr))
+        identifier,
+        common_context->pub,
+        static_cast<void *>(&participant_info),
+        nullptr))
     {
       goto fail;
     }
@@ -166,7 +166,6 @@ __rmw_destroy_node(
 
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
   rmw_dds_common::NodeCache & node_cache = common_context->node_cache;
-  rmw_context_t * context = node->context;
   result_ret = node_cache.delete_node_name(
     common_context->gid,
     node->name,

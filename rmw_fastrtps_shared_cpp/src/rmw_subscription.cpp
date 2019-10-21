@@ -49,7 +49,8 @@ __rmw_destroy_subscription(
     return RMW_RET_ERROR;
   }
 
-  auto participant_info = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  auto participant_info =
+    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   return destroy_subscription(
     identifier,
     participant_info,

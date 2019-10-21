@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMW_FASTRTPS_SHARED_CPP__CREATE_RMW_GID_HPP
-#define RMW_FASTRTPS_SHARED_CPP__CREATE_RMW_GID_HPP
+#ifndef RMW_FASTRTPS_SHARED_CPP__CREATE_RMW_GID_HPP_
+#define RMW_FASTRTPS_SHARED_CPP__CREATE_RMW_GID_HPP_
 
 #include "fastrtps/rtps/common/Guid.h"
 
@@ -30,4 +30,4 @@ create_rmw_gid(const char * identifier, const eprosima::fastrtps::rtps::GUID_t &
 
 }  // namespace rmw_fastrtps_shared_cpp
 
-#endif  // RMW_FASTRTPS_SHARED_CPP__CUSTOM_PARTICIPANT_INFO_HPP_
+#endif  // RMW_FASTRTPS_SHARED_CPP__CREATE_RMW_GID_HPP_

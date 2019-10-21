@@ -82,10 +82,10 @@ public:
     }
     if (eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT == info.status) {
       context->node_cache.add_gid(rmw_fastrtps_shared_cpp::create_rmw_gid(
-        graph_guard_condition_->implementation_identifier, info.info.m_guid));
+          graph_guard_condition_->implementation_identifier, info.info.m_guid));
     } else {
       context->node_cache.delete_node_names(rmw_fastrtps_shared_cpp::create_rmw_gid(
-        graph_guard_condition_->implementation_identifier, info.info.m_guid));
+          graph_guard_condition_->implementation_identifier, info.info.m_guid));
     }
   }
 

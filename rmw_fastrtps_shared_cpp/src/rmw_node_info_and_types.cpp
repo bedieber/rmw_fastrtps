@@ -1,3 +1,4 @@
+// Copyright 2019 Open Source Robotics Foundation, Inc.
 // Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -92,7 +93,8 @@ rmw_ret_t __validate_input(
   return RMW_RET_OK;
 }
 
-using RetrieveTopicCache = const rmw_dds_common::TopicCache & (*)(rmw_dds_common::Context & common_context);
+using RetrieveTopicCache =
+  const rmw_dds_common::TopicCache & (*)(rmw_dds_common::Context & common_context);
 using DemangleFunction = std::string (*)(const std::string &);
 using MangleFunction = DemangleFunction;
 
@@ -114,10 +116,9 @@ __rmw_get_topic_names_and_types_by_node(
   if (valid_input != RMW_RET_OK) {
     return valid_input;
   }
-  auto impl = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
 
-  DemangleFunction no_op{ [](const std::string & x){ return x; } };
+  DemangleFunction no_op{[](const std::string & x) {return x;}};
   if (no_demangle) {
     demangle_topic = no_op;
     demangle_type = no_op;

@@ -14,6 +14,8 @@
 
 #include <string>
 
+#include "fastrtps/Domain.h"
+
 #include "rcutils/allocator.h"
 #include "rcutils/logging_macros.h"
 #include "rcutils/strdup.h"
@@ -25,10 +27,12 @@
 #include "rmw/rmw.h"
 #include "rmw/sanity_checks.h"
 
-#include "fastrtps/Domain.h"
+#include "rmw_dds_common/context.hpp"
+#include "rmw_dds_common/node_cache.hpp"
 
-#include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
 using Participant = eprosima::fastrtps::Participant;
 
@@ -41,6 +45,26 @@ __rmw_get_node_names(
   rcutils_string_array_t * node_names,
   rcutils_string_array_t * node_namespaces)
 {
-  return RMW_RET_OK;
+  if (!node) {
+    RMW_SET_ERROR_MSG("null node handle");
+    return RMW_RET_ERROR;
+  }
+  if (rmw_check_zero_rmw_string_array(node_names) != RMW_RET_OK) {
+    return RMW_RET_ERROR;
+  }
+  if (rmw_check_zero_rmw_string_array(node_namespaces) != RMW_RET_OK) {
+    return RMW_RET_ERROR;
+  }
+  if (node->implementation_identifier != identifier) {
+    RMW_SET_ERROR_MSG("node handle not from this implementation");
+    return RMW_RET_ERROR;
+  }
+
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  rcutils_allocator_t allocator = rcutils_get_default_allocator();
+  return common_context->node_cache.get_node_names(
+    node_names,
+    node_namespaces,
+    &allocator);
 }
 }  // namespace rmw_fastrtps_shared_cpp

@@ -63,7 +63,8 @@ rmw_create_client(
     return nullptr;
   }
 
-  auto participant_info = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  auto participant_info =
+    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   if (!participant_info) {
     RMW_SET_ERROR_MSG("participant info is null");
     return nullptr;

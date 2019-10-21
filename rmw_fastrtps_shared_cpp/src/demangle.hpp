@@ -30,6 +30,10 @@ _demangle_if_ros_type(const std::string & dds_type_string);
 std::string
 _demangle_ros_topic_from_topic(const std::string & topic_name);
 
+/// Return the service name for a given topic if it is part of a service, else "".
+std::string
+_demangle_service_from_topic(const std::string & topic_name);
+
 /// Return the service name for a given topic if it is part of a service request, else "".
 std::string
 _demangle_service_request_from_topic(const std::string & topic_name);

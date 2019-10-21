@@ -14,6 +14,7 @@
 // limitations under the License.
 
 #include <limits.h>
+#include <string>
 
 #include "fastrtps/config.h"
 #include "fastrtps/Domain.h"
@@ -55,7 +56,7 @@ __create_participant(
   bool leave_middleware_default_qos,
   rmw_dds_common::Context * common_context)
 {
-   // Declare everything before beginning to create things.
+  // Declare everything before beginning to create things.
   ::ParticipantListener * listener = nullptr;
   Participant * participant = nullptr;
   rmw_guard_condition_t * graph_guard_condition = nullptr;
@@ -232,7 +233,7 @@ rmw_fastrtps_shared_cpp::destroy_participant(CustomParticipantInfo * participant
   }
   Domain::removeParticipant(participant_info->participant);
   if (RMW_RET_OK != rmw_fastrtps_shared_cpp::__rmw_destroy_guard_condition(
-    participant_info->graph_guard_condition))
+      participant_info->graph_guard_condition))
   {
     RMW_SET_ERROR_MSG("failed to destroy graph guard condition");
     result_ret = RMW_RET_ERROR;

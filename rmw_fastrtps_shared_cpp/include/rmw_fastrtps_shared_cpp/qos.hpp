@@ -22,7 +22,7 @@
 
 #include "rmw/rmw.h"
 
-#include "visibility_control.h"
+#include "rmw_fastrtps_shared_cpp/visibility_control.h"
 
 namespace eprosima
 {

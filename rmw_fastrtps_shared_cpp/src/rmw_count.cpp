@@ -84,5 +84,6 @@ __rmw_count_subscribers(
     node,
     topic_name,
     count,
-    common_context->reader_topic_cache);}
+    common_context->reader_topic_cache);
+}
 }  // namespace rmw_fastrtps_shared_cpp

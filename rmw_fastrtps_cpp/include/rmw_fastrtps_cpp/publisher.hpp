@@ -23,14 +23,14 @@ namespace rmw_fastrtps_cpp
 
 rmw_publisher_t *
 create_publisher(
-    const CustomParticipantInfo * participant_info,
-    const rosidl_message_type_support_t * type_supports,
-    const char * topic_name,
-    const rmw_qos_profile_t * qos_policies,
-    const char * node_namespace,
-    const char * node_name,
-    bool keyed,
-    bool create_publisher_listener);
+  const CustomParticipantInfo * participant_info,
+  const rosidl_message_type_support_t * type_supports,
+  const char * topic_name,
+  const rmw_qos_profile_t * qos_policies,
+  const char * node_namespace,
+  const char * node_name,
+  bool keyed,
+  bool create_publisher_listener);
 
 }  // namespace rmw_fastrtps_cpp
 

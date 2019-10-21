@@ -75,7 +75,8 @@ rmw_create_service(
     return nullptr;
   }
 
-  const CustomParticipantInfo * impl = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  const CustomParticipantInfo * impl =
+    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   if (!impl) {
     RMW_SET_ERROR_MSG("node impl is null");
     return nullptr;

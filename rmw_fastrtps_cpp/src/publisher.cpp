@@ -109,11 +109,12 @@ rmw_fastrtps_cpp::create_publisher(
 
   if (node_name || node_namespace) {
     if (RMW_RET_OK != get_group_data_qos(
-      node_name,
-      node_namespace,
-      publisherParam.qos.m_groupData)) {
-        goto fail;
-      }
+        node_name,
+        node_namespace,
+        publisherParam.qos.m_groupData))
+    {
+      goto fail;
+    }
   }
 
   if (!participant_info->leave_middleware_default_qos) {
@@ -141,7 +142,10 @@ rmw_fastrtps_cpp::create_publisher(
     }
   }
 
-  info->publisher_ = Domain::createPublisher(participant_info->participant, publisherParam, info->listener_);
+  info->publisher_ = Domain::createPublisher(
+    participant_info->participant,
+    publisherParam,
+    info->listener_);
   if (!info->publisher_) {
     RMW_SET_ERROR_MSG("create_publisher() could not create publisher");
     goto fail;

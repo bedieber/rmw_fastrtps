@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP_
-#define RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP_
+#ifndef RMW_FASTRTPS_SHARED_CPP__PARTICIPANT_HPP_
+#define RMW_FASTRTPS_SHARED_CPP__PARTICIPANT_HPP_
 
 #include "rmw/types.h"
 
@@ -21,7 +21,8 @@
 
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 
-namespace rmw_fastrtps_shared_cpp {
+namespace rmw_fastrtps_shared_cpp
+{
 
 CustomParticipantInfo *
 create_participant(
@@ -34,4 +35,4 @@ rmw_ret_t
 destroy_participant(CustomParticipantInfo * info);
 }  // namespace rmw_fastrtps_shared_cpp
 
-#endif  // RMW_DDS_COMMON__CREATE_PARTICIPANT_HPP
+#endif  // RMW_FASTRTPS_SHARED_CPP__PARTICIPANT_HPP_

@@ -33,7 +33,8 @@ TEST(Test_gid, constructor_destructor) {
 }
 
 TEST(Test_gid, get_typesupport) {
-  const rosidl_message_type_support_t * type_support_1 = rosidl_typesupport_cpp::get_message_type_support_handle<Gid>();
+  const rosidl_message_type_support_t * type_support_1 =
+    rosidl_typesupport_cpp::get_message_type_support_handle<Gid>();
   const rosidl_message_type_support_t * type_support_2 = get_message_typesupport_handle(
     type_support_1, RMW_FASTRTPS_CPP_TYPESUPPORT_CPP);
 

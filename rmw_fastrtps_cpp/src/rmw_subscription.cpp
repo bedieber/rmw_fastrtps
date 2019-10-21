@@ -70,7 +70,8 @@ rmw_create_subscription(
     return nullptr;
   }
 
-  auto participant_info = static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  auto participant_info =
+    static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   return rmw_fastrtps_cpp::create_subscription(
     participant_info,
     type_supports,
