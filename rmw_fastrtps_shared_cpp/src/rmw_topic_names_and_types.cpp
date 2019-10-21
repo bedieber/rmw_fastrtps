@@ -1,3 +1,4 @@
+// Copyright 2019 Open Source Robotics Foundation, Inc.
 // Copyright 2016-2018 Proyectos y Sistemas de Mantenimiento SL (eProsima).
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,36 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <map>
-#include <set>
 #include <string>
 
-#include <functional>
-#include <vector>
-
 #include "rcutils/allocator.h"
-#include "rcutils/error_handling.h"
-#include "rcutils/logging_macros.h"
-#include "rcutils/strdup.h"
-#include "rcutils/types.h"
 
 #include "rmw/allocators.h"
-#include "rmw/convert_rcutils_ret_to_rmw_ret.h"
 #include "rmw/error_handling.h"
 #include "rmw/get_topic_names_and_types.h"
 #include "rmw/impl/cpp/macros.hpp"
 #include "rmw/names_and_types.h"
-#include "rmw/rmw.h"
+#include "rmw/types.h"
 
+#include "rmw_dds_common/context.hpp"
 #include "rmw_dds_common/topic_cache.hpp"
 
-#include "demangle.hpp"
-#include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
-#include "rmw_fastrtps_shared_cpp/namespace_prefix.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
+#include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
+
+#include "demangle.hpp"
 
 namespace rmw_fastrtps_shared_cpp
 {
+
+using DemangleFunction = std::string (*)(const std::string &);
+
 rmw_ret_t
 __rmw_get_topic_names_and_types(
   const char * identifier,
@@ -50,6 +45,39 @@ __rmw_get_topic_names_and_types(
   bool no_demangle,
   rmw_names_and_types_t * topic_names_and_types)
 {
-  return RMW_RET_OK;
+  if (!allocator) {
+    RMW_SET_ERROR_MSG("allocator is null");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  if (!node) {
+    RMW_SET_ERROR_MSG("null node handle");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  rmw_ret_t ret = rmw_names_and_types_check_zero(topic_names_and_types);
+  if (ret != RMW_RET_OK) {
+    return ret;
+  }
+  if (node->implementation_identifier != identifier) {
+    RMW_SET_ERROR_MSG("node handle not from this implementation");
+    return RMW_RET_ERROR;
+  }
+
+  DemangleFunction demangle_topic = _demangle_ros_topic_from_topic;
+  DemangleFunction demangle_type = _demangle_if_ros_type;
+  DemangleFunction no_op{[](const std::string & x) {return x;}};
+
+  if (no_demangle) {
+    demangle_topic = no_op;
+    demangle_type = no_op;
+  }
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+
+  return get_names_and_types(
+    common_context->reader_topic_cache,
+    common_context->writer_topic_cache,
+    demangle_topic,
+    demangle_type,
+    allocator,
+    topic_names_and_types);
 }
 }  // namespace rmw_fastrtps_shared_cpp
