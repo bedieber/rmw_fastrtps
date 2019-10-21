@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef RMW_DDS_COMMON__LISTENER_THREAD_HPP_
-#define RMW_DDS_COMMON__LISTENER_THREAD_HPP_
+#ifndef LISTENER_THREAD_HPP_
+#define LISTENER_THREAD_HPP_
 
 #include "rmw/init.h"
 
@@ -26,5 +26,5 @@ run_listener_thread(rmw_context_t * context);
 rmw_ret_t
 join_listener_thread(rmw_context_t * context);
 
-}  // namespace rmw_dds_common
-#endif  // RMW_DDS_COMMON__RMW_CONTEXT_IMPL_H_
+}  // namespace rmw_fastrtps_cpp
+#endif  // LISTENER_THREAD_HPP_

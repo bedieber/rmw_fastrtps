@@ -37,6 +37,8 @@
 
 using rmw_dds_common::operator<<;
 
+static const char log_tag[] = "rmw_dds_common";
+
 static
 void
 node_listener(rmw_context_t * context);
@@ -45,41 +47,59 @@ rmw_ret_t
 rmw_fastrtps_cpp::run_listener_thread(rmw_context_t * context)
 {
   auto common_context = static_cast<rmw_dds_common::Context *>(context->impl->common);
+  common_context->thread_is_running.store(true);
+  common_context->listener_thread_gc = rmw_create_guard_condition(context);
+  if (!common_context->listener_thread_gc) {
+    goto fail;
+  }
   try {
-    common_context->thread_is_running.store(true);
     common_context->listener_thread = std::thread(node_listener, context);
   } catch (...) {
-    RMW_SET_ERROR_MSG("failed to create node listener thread");
-    return RMW_RET_ERROR;
+    goto fail;
   }
   return RMW_RET_OK;
+fail:
+  common_context->thread_is_running.store(false);
+  if (common_context->listener_thread_gc) {
+    if (RMW_RET_OK != rmw_destroy_guard_condition(common_context->listener_thread_gc)) {
+      RCUTILS_LOG_ERROR_NAMED(log_tag, "Failed to destroy guard condition");
+    }
+  }
+  return RMW_RET_ERROR;
 }
 
 rmw_ret_t
 rmw_fastrtps_cpp::join_listener_thread(rmw_context_t * context)
 {
   auto common_context = static_cast<rmw_dds_common::Context *>(context->impl->common);
+  common_context->thread_is_running.exchange(false);
+  if (RMW_RET_OK != rmw_trigger_guard_condition(common_context->listener_thread_gc)) {
+    goto fail;
+  }
   try {
-    common_context->thread_is_running.exchange(false);
     common_context->listener_thread.join();
   } catch (...) {
-    RMW_SET_ERROR_MSG("failed to join node listener thread");
-    return RMW_RET_ERROR;
+    goto fail;
   }
+  if (RMW_RET_OK != rmw_destroy_guard_condition(common_context->listener_thread_gc)) {
+    goto fail;
+  }
+  return RMW_RET_OK;
+fail:
   return RMW_RET_ERROR;
 }
 
-static const char log_tag[] = "rmw_dds_common node listener";
-
 static
 void
-terminate(const char * error_message) {
+terminate(const char * error_message)
+{
   RCUTILS_LOG_ERROR_NAMED(log_tag, "%s, terminating ...", error_message);
   std::terminate();
 }
 
 void
-node_listener(rmw_context_t * context) {
+node_listener(rmw_context_t * context)
+{
   assert(nullptr != context);
   assert(nullptr != context->impl);
   assert(nullptr != context->impl->common);
@@ -88,21 +108,26 @@ node_listener(rmw_context_t * context) {
     assert(nullptr != common_context->sub);
     assert(nullptr != common_context->sub->data);
     void * subscriptions_buffer[] = {common_context->sub->data};
+    void * guard_conditions_buffer[] = {common_context->listener_thread_gc->data};
     rmw_subscriptions_t subscriptions;
+    rmw_guard_conditions_t guard_conditions;
     subscriptions.subscriber_count = 1;
     subscriptions.subscribers = subscriptions_buffer;
-    rmw_wait_set_t * wait_set = rmw_create_wait_set(context, 2); // number of conditions of a subscription is 2
+    guard_conditions.guard_condition_count = 1;
+    guard_conditions.guard_conditions = guard_conditions_buffer;
+    // number of conditions of a subscription is 2
+    rmw_wait_set_t * wait_set = rmw_create_wait_set(context, 2);
     if (nullptr == wait_set) {
       terminate("failed to create wait set");
     }
     if (RMW_RET_OK != rmw_wait(
-      &subscriptions,
-      nullptr,
-      nullptr,
-      nullptr,
-      nullptr,
-      wait_set,
-      nullptr))
+        &subscriptions,
+        &guard_conditions,
+        nullptr,
+        nullptr,
+        nullptr,
+        wait_set,
+        nullptr))
     {
       terminate("rmw_wait failed");
     }
@@ -110,10 +135,10 @@ node_listener(rmw_context_t * context) {
       rmw_dds_common::msg::ParticipantCustomInfo msg;
       bool taken;
       if (RMW_RET_OK != rmw_take(
-        common_context->sub,
-        static_cast<void *>(&msg),
-        &taken,
-        nullptr))
+          common_context->sub,
+          static_cast<void *>(&msg),
+          &taken,
+          nullptr))
       {
         terminate("rmw_take failed");
       }
@@ -122,8 +147,8 @@ node_listener(rmw_context_t * context) {
         rmw_gid_t gid;
         rmw_dds_common::convert_msg_to_gid(&msg.id, &gid);
         if (std::strcmp(
-          reinterpret_cast<char *>(common_context->gid.data),
-          reinterpret_cast<char *>(gid.data)) == 0)
+            reinterpret_cast<char *>(common_context->gid.data),
+            reinterpret_cast<char *>(gid.data)) == 0)
         {
           // ignore local messages
           continue;
