@@ -147,17 +147,6 @@ rmw_create_client(
   publisherParam.topic.topicName = _create_topic_name(
     qos_policies, ros_service_requester_prefix, service_name, "Request");
 
-  if (node->name || node->namespace_) {
-    get_group_data_qos(
-      node->name,
-      node->namespace_,
-      subscriberParam.qos.m_groupData);
-    get_group_data_qos(
-      node->name,
-      node->namespace_,
-      publisherParam.qos.m_groupData);
-  }
-
   RCUTILS_LOG_DEBUG_NAMED(
     "rmw_fastrtps_cpp",
     "************ Client Details *********");

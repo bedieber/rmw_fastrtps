@@ -49,13 +49,6 @@ get_datawriter_qos(
   const rmw_qos_profile_t & qos_policies,
   eprosima::fastrtps::PublisherAttributes & pattr);
 
-RMW_FASTRTPS_SHARED_CPP_PUBLIC
-rmw_ret_t
-get_group_data_qos(
-  const char * node_name,
-  const char * node_namespace,
-  eprosima::fastrtps::GroupDataQosPolicy & group_data);
-
 template<typename AttributeT>
 void
 dds_qos_to_rmw_qos(
