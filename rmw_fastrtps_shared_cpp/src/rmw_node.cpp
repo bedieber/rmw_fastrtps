@@ -77,9 +77,8 @@ __rmw_create_node(
   }
 
   rmw_node_t * node_handle = nullptr;
-  rmw_dds_common::msg::ParticipantCustomInfo participant_info;
   auto common_context = static_cast<rmw_dds_common::Context *>(context->impl->common);
-  rmw_dds_common::NodeCache & node_cache = common_context->node_cache;
+  rmw_dds_common::GraphCache & graph_cache = common_context->graph_cache;
 
   node_handle = rmw_node_allocate();
   if (!node_handle) {
@@ -108,29 +107,18 @@ __rmw_create_node(
   node_handle->context = context;
 
   {
-    // Though node_cache methods are thread safe, both cache update and publishing have to also
+    // Though graph_cache methods are thread safe, both cache update and publishing have to also
     // be atomic.
     // If not, the following race condition is possible:
     // node1-update-get-message / node2-update-get-message / node2-publish / node1-publish
     // In that case, the last message published is not accurate.
     std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
-    if (RMW_RET_OK != node_cache.add_node_name(
-        common_context->gid,
-        name,
-        namespace_))
-    {
-      goto fail;
-    }
-    if (RMW_RET_OK != node_cache.get_participant_state_message(
-        common_context->gid,
-        participant_info))
-    {
-      goto fail;
-    }
+    rmw_dds_common::msg::ParticipantEntitiesInfo participant_msg =
+      graph_cache.add_node(common_context->gid, name, namespace_);
     if (RMW_RET_OK != __rmw_publish(
         identifier,
         common_context->pub,
-        static_cast<void *>(&participant_info),
+        static_cast<void *>(&participant_msg),
         nullptr))
     {
       goto fail;
@@ -165,20 +153,19 @@ __rmw_destroy_node(
   }
 
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
-  rmw_dds_common::NodeCache & node_cache = common_context->node_cache;
-  result_ret = node_cache.delete_node_name(
-    common_context->gid,
-    node->name,
-    node->namespace_);
-  if (RMW_RET_OK != result_ret) {
-    return result_ret;
-  }
-  rmw_dds_common::msg::ParticipantCustomInfo participant_info_msg;
-  result_ret = node_cache.get_participant_state_message(
-    common_context->gid,
-    participant_info_msg);
-  if (RMW_RET_OK != result_ret) {
-    return result_ret;
+  rmw_dds_common::GraphCache & graph_cache = common_context->graph_cache;
+  {
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_dds_common::msg::ParticipantEntitiesInfo participant_msg =
+      graph_cache.remove_node(common_context->gid, node->name, node->namespace_);
+    result_ret = __rmw_publish(
+      identifier,
+      common_context->pub,
+      static_cast<void *>(&participant_msg),
+      nullptr);
+    if (RMW_RET_OK != result_ret) {
+      return result_ret;
+    }
   }
   rmw_free(const_cast<char *>(node->name));
   node->name = nullptr;
@@ -186,11 +173,7 @@ __rmw_destroy_node(
   node->namespace_ = nullptr;
   rmw_node_free(node);
 
-  return __rmw_publish(
-    identifier,
-    common_context->pub,
-    static_cast<void *>(&participant_info_msg),
-    nullptr);
+  return RMW_RET_OK;
 }
 
 rmw_ret_t

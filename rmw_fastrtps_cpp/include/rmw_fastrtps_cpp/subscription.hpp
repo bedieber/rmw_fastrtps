@@ -28,8 +28,6 @@ create_subscription(
   const char * topic_name,
   const rmw_qos_profile_t * qos_policies,
   bool ignore_local_publications,
-  const char * node_namespace,
-  const char * node_name,
   bool keyed,
   bool create_subscription_listener);
 

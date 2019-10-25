@@ -140,7 +140,7 @@ RMW_FASTRTPS_SHARED_CPP_PUBLIC
 rmw_ret_t
 __rmw_destroy_publisher(
   const char * identifier,
-  rmw_node_t * node,
+  const rmw_node_t * node,
   rmw_publisher_t * publisher);
 
 RMW_FASTRTPS_SHARED_CPP_PUBLIC
@@ -258,7 +258,7 @@ RMW_FASTRTPS_SHARED_CPP_PUBLIC
 rmw_ret_t
 __rmw_destroy_subscription(
   const char * identifier,
-  rmw_node_t * node,
+  const rmw_node_t * node,
   rmw_subscription_t * subscription);
 
 RMW_FASTRTPS_SHARED_CPP_PUBLIC

@@ -93,10 +93,16 @@ rmw_ret_t __validate_input(
   return RMW_RET_OK;
 }
 
-using RetrieveTopicCache =
-  const rmw_dds_common::TopicCache & (*)(rmw_dds_common::Context & common_context);
 using DemangleFunction = std::string (*)(const std::string &);
 using MangleFunction = DemangleFunction;
+using GetNamesAndTypesByNodeFunction = rmw_ret_t (*)(
+  rmw_dds_common::Context *,
+  const std::string &,
+  const std::string &,
+  DemangleFunction,
+  DemangleFunction,
+  rcutils_allocator_t *,
+  rmw_names_and_types_t *);
 
 rmw_ret_t
 __rmw_get_topic_names_and_types_by_node(
@@ -108,7 +114,7 @@ __rmw_get_topic_names_and_types_by_node(
   DemangleFunction demangle_topic,
   DemangleFunction demangle_type,
   bool no_demangle,
-  RetrieveTopicCache retrieve_topic_cache,
+  GetNamesAndTypesByNodeFunction get_names_and_types_by_node,
   rmw_names_and_types_t * topic_names_and_types)
 {
   rmw_ret_t valid_input = __validate_input(identifier, node, allocator, node_name,
@@ -124,9 +130,8 @@ __rmw_get_topic_names_and_types_by_node(
     demangle_type = no_op;
   }
 
-  const rmw_dds_common::TopicCache & topic_cache = retrieve_topic_cache(*common_context);
-  return topic_cache.get_names_and_types_by_node(
-    common_context->gid,
+  return get_names_and_types_by_node(
+    common_context,
     node_name,
     node_namespace,
     demangle_topic,
@@ -135,16 +140,42 @@ __rmw_get_topic_names_and_types_by_node(
     topic_names_and_types);
 }
 
-const rmw_dds_common::TopicCache &
-__retrieve_reader_topic_cache(rmw_dds_common::Context & common_context)
+rmw_ret_t
+__get_reader_names_and_types_by_node(
+  rmw_dds_common::Context * common_context,
+  const std::string & node_name,
+  const std::string & node_namespace,
+  DemangleFunction demangle_topic,
+  DemangleFunction demangle_type,
+  rcutils_allocator_t * allocator,
+  rmw_names_and_types_t * topic_names_and_types)
 {
-  return common_context.reader_topic_cache;
+  return common_context->graph_cache.get_reader_names_and_types_by_node(
+    node_name,
+    node_namespace,
+    demangle_topic,
+    demangle_type,
+    allocator,
+    topic_names_and_types);
 }
 
-const rmw_dds_common::TopicCache &
-__retrieve_writer_topic_cache(rmw_dds_common::Context & common_context)
+rmw_ret_t
+__get_writer_names_and_types_by_node(
+  rmw_dds_common::Context * common_context,
+  const std::string & node_name,
+  const std::string & node_namespace,
+  DemangleFunction demangle_topic,
+  DemangleFunction demangle_type,
+  rcutils_allocator_t * allocator,
+  rmw_names_and_types_t * topic_names_and_types)
 {
-  return common_context.writer_topic_cache;
+  return common_context->graph_cache.get_writer_names_and_types_by_node(
+    node_name,
+    node_namespace,
+    demangle_topic,
+    demangle_type,
+    allocator,
+    topic_names_and_types);
 }
 
 rmw_ret_t
@@ -166,7 +197,7 @@ __rmw_get_subscriber_names_and_types_by_node(
     _demangle_ros_topic_from_topic,
     _demangle_if_ros_type,
     no_demangle,
-    __retrieve_reader_topic_cache,
+    __get_reader_names_and_types_by_node,
     topic_names_and_types);
 }
 
@@ -189,7 +220,7 @@ __rmw_get_publisher_names_and_types_by_node(
     _demangle_ros_topic_from_topic,
     _demangle_if_ros_type,
     no_demangle,
-    __retrieve_writer_topic_cache,
+    __get_writer_names_and_types_by_node,
     topic_names_and_types);
 }
 
@@ -211,7 +242,7 @@ __rmw_get_service_names_and_types_by_node(
     _demangle_service_request_from_topic,
     _demangle_service_type_only,
     false,
-    __retrieve_reader_topic_cache,
+    __get_reader_names_and_types_by_node,
     service_names_and_types);
 }
 
@@ -233,7 +264,7 @@ __rmw_get_client_names_and_types_by_node(
     _demangle_service_reply_from_topic,
     _demangle_service_type_only,
     false,
-    __retrieve_reader_topic_cache,
+    __get_reader_names_and_types_by_node,
     service_names_and_types);
 }
 

@@ -63,6 +63,7 @@ rmw_create_client(
     return nullptr;
   }
 
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
   auto participant_info =
     static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
   if (!participant_info) {
@@ -212,15 +213,54 @@ rmw_create_client(
   }
   memcpy(const_cast<char *>(rmw_client->service_name), service_name, strlen(service_name) + 1);
 
+  {
+    // Update graph
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+      eprosima_fastrtps_identifier, info->request_publisher_->getGuid());
+    common_context->graph_cache.associate_writer(
+      gid,
+      common_context->gid,
+      node->name,
+      node->namespace_);
+    gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+      eprosima_fastrtps_identifier, info->response_subscriber_->getGuid());
+    rmw_dds_common::msg::ParticipantEntitiesInfo msg =
+      common_context->graph_cache.associate_reader(
+      gid, common_context->gid, node->name, node->namespace_);
+    rmw_ret_t rmw_ret = rmw_fastrtps_shared_cpp::__rmw_publish(
+      eprosima_fastrtps_identifier,
+      common_context->pub,
+      static_cast<void *>(&msg),
+      nullptr);
+    if (RMW_RET_OK != rmw_ret) {
+      goto fail;
+    }
+  }
+
   return rmw_client;
 
 fail:
   if (info != nullptr) {
     if (info->request_publisher_ != nullptr) {
+      rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+        eprosima_fastrtps_identifier, info->request_publisher_->getGuid());
+      common_context->graph_cache.deassociate_writer(
+        gid,
+        common_context->gid,
+        node->name,
+        node->namespace_);
       Domain::removePublisher(info->request_publisher_);
     }
 
     if (info->response_subscriber_ != nullptr) {
+      rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+        eprosima_fastrtps_identifier, info->response_subscriber_->getGuid());
+      common_context->graph_cache.deassociate_reader(
+        gid,
+        common_context->gid,
+        node->name,
+        node->namespace_);
       Domain::removeSubscriber(info->response_subscriber_);
     }
 

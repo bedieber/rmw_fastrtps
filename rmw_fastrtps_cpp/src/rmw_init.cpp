@@ -21,7 +21,7 @@
 #include "rmw/rmw.h"
 
 #include "rmw_dds_common/context.hpp"
-#include "rmw_dds_common/msg/participant_custom_info.hpp"
+#include "rmw_dds_common/msg/participant_entities_info.hpp"
 
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 #include "rmw_fastrtps_shared_cpp/participant.hpp"
@@ -87,7 +87,7 @@ rmw_init_options_fini(rmw_init_options_t * init_options)
   return RMW_RET_OK;
 }
 
-using rmw_dds_common::msg::ParticipantCustomInfo;
+using rmw_dds_common::msg::ParticipantEntitiesInfo;
 
 rmw_ret_t
 rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
@@ -146,11 +146,9 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
 
   publisher = rmw_fastrtps_cpp::create_publisher(
     participant_info,
-    rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantCustomInfo>(),
+    rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantEntitiesInfo>(),
     "_participant_info",
     &qos,
-    nullptr,  // node namespace
-    nullptr,  // node name
     false,  // our fastrtps typesupport doesn't support keyed topics
     true);  // don't create a publisher listener
   if (nullptr == publisher) {
@@ -160,12 +158,10 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
   // using same qos for the subscription
   subscription = rmw_fastrtps_cpp::create_subscription(
     participant_info,
-    rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantCustomInfo>(),
+    rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantEntitiesInfo>(),
     "_participant_info",
     &qos,
     true,  // ignore_local_publications, currently not implemented
-    nullptr,  // node namespace
-    nullptr,  // node name
     false,  // our fastrtps typesupport doesn't support keyed topics
     true);  // don't create a subscriber listener
   if (nullptr == subscription) {
@@ -176,7 +172,9 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
     eprosima_fastrtps_identifier, participant_info->participant->getGuid());
   common_context->pub = publisher;
   common_context->sub = subscription;
-  common_context->node_cache.add_gid(common_context->gid);
+  // This is not more needed.
+  // node_cache.add_gid(common_context->gid);
+  common_context->graph_cache.add_participant(common_context->gid);
 
   ret = rmw_fastrtps_cpp::run_listener_thread(context);
   if (RMW_RET_OK != ret) {

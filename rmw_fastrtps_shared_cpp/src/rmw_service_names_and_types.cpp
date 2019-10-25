@@ -24,7 +24,6 @@
 #include "rmw/types.h"
 
 #include "rmw_dds_common/context.hpp"
-#include "rmw_dds_common/topic_cache.hpp"
 
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
@@ -60,16 +59,11 @@ __rmw_get_service_names_and_types(
     return RMW_RET_ERROR;
   }
 
-  DemangleFunction demangle_topic = _demangle_service_from_topic;
-  DemangleFunction demangle_type = _demangle_service_type_only;
-
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
 
-  return get_names_and_types(
-    common_context->reader_topic_cache,
-    common_context->writer_topic_cache,
-    demangle_topic,
-    demangle_type,
+  return common_context->graph_cache.get_names_and_types(
+    _demangle_service_from_topic,
+    _demangle_service_type_only,
     allocator,
     service_names_and_types);
 }

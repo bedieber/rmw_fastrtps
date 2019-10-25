@@ -49,8 +49,6 @@ create_subscription(
   const char * topic_name,
   const rmw_qos_profile_t * qos_policies,
   bool ignore_local_publications,
-  const char * node_namespace,
-  const char * node_name,
   bool keyed,
   bool create_subscription_listener)
 {
@@ -112,12 +110,6 @@ create_subscription(
     }
     _register_type(participant, info->type_support_);
   }
-  if (node_name || node_namespace) {
-    get_group_data_qos(
-      node_name,
-      node_namespace,
-      subscriberParam.qos.m_groupData);
-  }
   if (!participant_info->leave_middleware_default_qos) {
     subscriberParam.historyMemoryPolicy =
       eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
@@ -145,6 +137,8 @@ create_subscription(
     RMW_SET_ERROR_MSG("create_subscriber() could not create subscriber");
     goto fail;
   }
+  info->subscription_gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+    eprosima_fastrtps_identifier, info->subscriber_->getGuid());
   rmw_subscription = rmw_subscription_allocate();
   if (!rmw_subscription) {
     RMW_SET_ERROR_MSG("failed to allocate subscription");

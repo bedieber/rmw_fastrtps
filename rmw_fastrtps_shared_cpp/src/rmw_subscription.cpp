@@ -36,7 +36,7 @@ namespace rmw_fastrtps_shared_cpp
 rmw_ret_t
 __rmw_destroy_subscription(
   const char * identifier,
-  rmw_node_t * node,
+  const rmw_node_t * node,
   rmw_subscription_t * subscription)
 {
   if (!node) {
@@ -47,6 +47,24 @@ __rmw_destroy_subscription(
   if (node->implementation_identifier != identifier) {
     RMW_SET_ERROR_MSG("node handle not from this implementation");
     return RMW_RET_ERROR;
+  }
+
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  auto info = static_cast<const CustomSubscriberInfo *>(subscription->data);
+  {
+    // Update graph
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_dds_common::msg::ParticipantEntitiesInfo msg =
+      common_context->graph_cache.deassociate_reader(
+      info->subscription_gid, common_context->gid, node->name, node->namespace_);
+    rmw_ret_t rmw_ret = rmw_fastrtps_shared_cpp::__rmw_publish(
+      identifier,
+      common_context->pub,
+      static_cast<void *>(&msg),
+      nullptr);
+    if (RMW_RET_OK != rmw_ret) {
+      return rmw_ret;
+    }
   }
 
   auto participant_info =

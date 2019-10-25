@@ -45,8 +45,6 @@ rmw_fastrtps_cpp::create_publisher(
   const rosidl_message_type_support_t * type_supports,
   const char * topic_name,
   const rmw_qos_profile_t * qos_policies,
-  const char * node_namespace,
-  const char * node_name,
   bool keyed,
   bool create_publisher_listener)
 {
@@ -105,16 +103,6 @@ rmw_fastrtps_cpp::create_publisher(
       goto fail;
     }
     _register_type(participant_info->participant, info->type_support_);
-  }
-
-  if (node_name || node_namespace) {
-    if (RMW_RET_OK != get_group_data_qos(
-        node_name,
-        node_namespace,
-        publisherParam.qos.m_groupData))
-    {
-      goto fail;
-    }
   }
 
   if (!participant_info->leave_middleware_default_qos) {

@@ -27,8 +27,6 @@ create_publisher(
   const rosidl_message_type_support_t * type_supports,
   const char * topic_name,
   const rmw_qos_profile_t * qos_policies,
-  const char * node_namespace,
-  const char * node_name,
   bool keyed,
   bool create_publisher_listener);
 

@@ -21,6 +21,7 @@
 #include "rmw/rmw.h"
 
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
+#include "rmw_fastrtps_shared_cpp/custom_subscriber_info.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
@@ -72,16 +73,38 @@ rmw_create_subscription(
 
   auto participant_info =
     static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
-  return rmw_fastrtps_cpp::create_subscription(
+  rmw_subscription_t * subscription = rmw_fastrtps_cpp::create_subscription(
     participant_info,
     type_supports,
     topic_name,
     qos_policies,
     ignore_local_publications,
-    node->namespace_,
-    node->name,
     false,  // use no keyed topic
     true);  // create subscription listener
+  if (!subscription) {
+    return nullptr;
+  }
+
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  auto info = static_cast<const CustomSubscriberInfo *>(subscription->data);
+  {
+    // Update graph
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_dds_common::msg::ParticipantEntitiesInfo msg =
+      common_context->graph_cache.associate_reader(
+      info->subscription_gid, common_context->gid, node->name, node->namespace_);
+    rmw_ret_t rmw_ret = rmw_fastrtps_shared_cpp::__rmw_publish(
+      eprosima_fastrtps_identifier,
+      common_context->pub,
+      static_cast<void *>(&msg),
+      nullptr);
+    if (RMW_RET_OK != rmw_ret) {
+      rmw_fastrtps_shared_cpp::__rmw_destroy_subscription(
+        eprosima_fastrtps_identifier, node, subscription);
+      return nullptr;
+    }
+  }
+  return subscription;
 }
 
 rmw_ret_t

@@ -86,8 +86,8 @@ add_library(rmw_fastrtps_cpp
   src/subscription.cpp
   src/type_support_common.cpp
   src/gid__type_support.cpp
-  src/node_custom_info__type_support.cpp
-  src/participant_custom_info__type_support.cpp
+  src/node_entities_info__type_support.cpp
+  src/participant_entities_info__type_support.cpp
 )
 target_link_libraries(rmw_fastrtps_cpp
   fastcdr fastrtps)

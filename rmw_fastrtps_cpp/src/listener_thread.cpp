@@ -24,12 +24,12 @@
 #include "rmw/init.h"
 #include "rmw/ret_types.h"
 #include "rmw/rmw.h"
+#include "rmw/types.h"
 #include "rmw/impl/cpp/macros.hpp"
 
 #include "rmw_dds_common/context.hpp"
 #include "rmw_dds_common/gid_utils.hpp"
-#include "rmw_dds_common/node_cache.hpp"
-#include "rmw_dds_common/msg/participant_custom_info.hpp"
+#include "rmw_dds_common/msg/participant_entities_info.hpp"
 
 #include "rmw_fastrtps_shared_cpp/rmw_context_impl.h"
 
@@ -132,7 +132,7 @@ node_listener(rmw_context_t * context)
       terminate("rmw_wait failed");
     }
     if (subscriptions_buffer[0]) {
-      rmw_dds_common::msg::ParticipantCustomInfo msg;
+      rmw_dds_common::msg::ParticipantEntitiesInfo msg;
       bool taken;
       if (RMW_RET_OK != rmw_take(
           common_context->sub,
@@ -144,21 +144,20 @@ node_listener(rmw_context_t * context)
       }
       if (taken) {
         // TODO(ivanpauno): Should the program be terminated if taken is false?
-        rmw_gid_t gid;
-        rmw_dds_common::convert_msg_to_gid(&msg.id, &gid);
-        if (std::strcmp(
+        if (std::strncmp(
             reinterpret_cast<char *>(common_context->gid.data),
-            reinterpret_cast<char *>(gid.data)) == 0)
+            reinterpret_cast<char *>(&msg.gid.data),
+            RMW_GID_STORAGE_SIZE) == 0)
         {
           // ignore local messages
           continue;
         }
-        common_context->node_cache.update_node_names(gid, msg.nodes_info);
+        common_context->graph_cache.update_participant_entities(msg);
         if (rcutils_logging_logger_is_enabled_for("rmw_dds_common",
           RCUTILS_LOG_SEVERITY_DEBUG))
         {
           std::ostringstream ss;
-          ss << common_context->node_cache;
+          ss << common_context->graph_cache;
           RCUTILS_LOG_DEBUG_NAMED("rmw_fastrtps_cpp", "%s", ss.str().c_str());
         }
       }

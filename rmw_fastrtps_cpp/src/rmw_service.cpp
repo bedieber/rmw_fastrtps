@@ -77,6 +77,7 @@ rmw_create_service(
 
   const CustomParticipantInfo * impl =
     static_cast<CustomParticipantInfo *>(node->context->impl->participant_info);
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
   if (!impl) {
     RMW_SET_ERROR_MSG("node impl is null");
     return nullptr;
@@ -138,16 +139,6 @@ rmw_create_service(
   if (!impl->leave_middleware_default_qos) {
     subscriberParam.historyMemoryPolicy =
       eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-  }
-  if (node->name || node->namespace_) {
-    get_group_data_qos(
-      node->name,
-      node->namespace_,
-      subscriberParam.qos.m_groupData);
-    get_group_data_qos(
-      node->name,
-      node->namespace_,
-      publisherParam.qos.m_groupData);
   }
   subscriberParam.topic.topicKind = eprosima::fastrtps::rtps::NO_KEY;
   subscriberParam.topic.topicDataType = request_type_name;
@@ -216,16 +207,55 @@ rmw_create_service(
   }
   memcpy(const_cast<char *>(rmw_service->service_name), service_name, strlen(service_name) + 1);
 
+  {
+    // Update graph
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+      eprosima_fastrtps_identifier, info->request_subscriber_->getGuid());
+    common_context->graph_cache.associate_reader(
+      gid,
+      common_context->gid,
+      node->name,
+      node->namespace_);
+    gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+      eprosima_fastrtps_identifier, info->response_publisher_->getGuid());
+    rmw_dds_common::msg::ParticipantEntitiesInfo msg =
+      common_context->graph_cache.associate_writer(
+      gid, common_context->gid, node->name, node->namespace_);
+    rmw_ret_t rmw_ret = rmw_fastrtps_shared_cpp::__rmw_publish(
+      eprosima_fastrtps_identifier,
+      common_context->pub,
+      static_cast<void *>(&msg),
+      nullptr);
+    if (RMW_RET_OK != rmw_ret) {
+      goto fail;
+    }
+  }
+
   return rmw_service;
 
 fail:
 
   if (info) {
     if (info->response_publisher_) {
+      rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+        eprosima_fastrtps_identifier, info->response_publisher_->getGuid());
+      common_context->graph_cache.deassociate_writer(
+        gid,
+        common_context->gid,
+        node->name,
+        node->namespace_);
       Domain::removePublisher(info->response_publisher_);
     }
 
     if (info->request_subscriber_) {
+      rmw_gid_t gid = rmw_fastrtps_shared_cpp::create_rmw_gid(
+        eprosima_fastrtps_identifier, info->request_subscriber_->getGuid());
+      common_context->graph_cache.deassociate_reader(
+        gid,
+        common_context->gid,
+        node->name,
+        node->namespace_);
       Domain::removeSubscriber(info->request_subscriber_);
     }
 

@@ -28,7 +28,6 @@
 #include "rmw/sanity_checks.h"
 
 #include "rmw_dds_common/context.hpp"
-#include "rmw_dds_common/node_cache.hpp"
 
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 #include "rmw_fastrtps_shared_cpp/rmw_common.hpp"
@@ -62,7 +61,7 @@ __rmw_get_node_names(
 
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
   rcutils_allocator_t allocator = rcutils_get_default_allocator();
-  return common_context->node_cache.get_node_names(
+  return common_context->graph_cache.get_node_names(
     node_names,
     node_namespaces,
     &allocator);

@@ -25,7 +25,6 @@
 #include "rmw/types.h"
 
 #include "rmw_dds_common/context.hpp"
-#include "rmw_dds_common/topic_cache.hpp"
 
 #include "rmw_fastrtps_shared_cpp/custom_participant_info.hpp"
 #include "rmw_fastrtps_shared_cpp/names.hpp"
@@ -36,12 +35,11 @@ namespace rmw_fastrtps_shared_cpp
 {
 
 rmw_ret_t
-__rmw_count(
+__rmw_count_publishers(
   const char * identifier,
   const rmw_node_t * node,
   const char * topic_name,
-  size_t * count,
-  const rmw_dds_common::TopicCache & topic_cache)
+  size_t * count)
 {
   if (!node) {
     RMW_SET_ERROR_MSG("null node handle");
@@ -51,24 +49,9 @@ __rmw_count(
     RMW_SET_ERROR_MSG("node handle not from this implementation");
     return RMW_RET_INVALID_ARGUMENT;
   }
-  std::string mangled_topic_name = _mangle_topic_name(ros_topic_prefix, topic_name);
-  return topic_cache.get_count(mangled_topic_name, count);
-}
-
-rmw_ret_t
-__rmw_count_publishers(
-  const char * identifier,
-  const rmw_node_t * node,
-  const char * topic_name,
-  size_t * count)
-{
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
-  return __rmw_count(
-    identifier,
-    node,
-    topic_name,
-    count,
-    common_context->writer_topic_cache);
+  std::string mangled_topic_name = _mangle_topic_name(ros_topic_prefix, topic_name);
+  return common_context->graph_cache.get_writer_count(mangled_topic_name, count);
 }
 
 rmw_ret_t
@@ -78,12 +61,16 @@ __rmw_count_subscribers(
   const char * topic_name,
   size_t * count)
 {
+  if (!node) {
+    RMW_SET_ERROR_MSG("null node handle");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
+  if (node->implementation_identifier != identifier) {
+    RMW_SET_ERROR_MSG("node handle not from this implementation");
+    return RMW_RET_INVALID_ARGUMENT;
+  }
   auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
-  return __rmw_count(
-    identifier,
-    node,
-    topic_name,
-    count,
-    common_context->reader_topic_cache);
+  std::string mangled_topic_name = _mangle_topic_name(ros_topic_prefix, topic_name);
+  return common_context->graph_cache.get_reader_count(mangled_topic_name, count);
 }
 }  // namespace rmw_fastrtps_shared_cpp

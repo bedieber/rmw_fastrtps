@@ -72,9 +72,9 @@ _demangle_service_from_topic(
     return "";
   }
 
-  size_t suffix_position = topic_name.rfind(suffix);
+  size_t suffix_position = service_name.rfind(suffix);
   if (suffix_position != std::string::npos) {
-    if (topic_name.length() - suffix_position - suffix.length() != 0) {
+    if (service_name.length() - suffix_position - suffix.length() != 0) {
       RCUTILS_LOG_WARN_NAMED("rmw_fastrtps_shared_cpp",
         "service topic has service prefix and a suffix, but not at the end"
         ", report this: '%s'", topic_name.c_str());
@@ -88,7 +88,7 @@ _demangle_service_from_topic(
       ", report this: '%s'", topic_name.c_str());
     return "";
   }
-  return service_name.substr(0, suffix_position + 1);
+  return service_name.substr(0, suffix_position);
 }
 
 std::string

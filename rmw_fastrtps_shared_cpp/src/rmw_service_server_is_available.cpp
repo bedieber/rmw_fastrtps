@@ -78,7 +78,7 @@ __rmw_service_server_is_available(
 
   size_t number_of_request_subscribers = 0;
   rmw_ret_t ret =
-    common_context->reader_topic_cache.get_count(pub_topic_name, &number_of_request_subscribers);
+    common_context->graph_cache.get_reader_count(pub_topic_name, &number_of_request_subscribers);
   if (ret != RMW_RET_OK) {
     // error
     return ret;
@@ -90,7 +90,7 @@ __rmw_service_server_is_available(
 
   size_t number_of_response_publishers = 0;
   ret =
-    common_context->writer_topic_cache.get_count(sub_topic_name, &number_of_response_publishers);
+    common_context->graph_cache.get_writer_count(sub_topic_name, &number_of_response_publishers);
   if (ret != RMW_RET_OK) {
     // error
     return ret;

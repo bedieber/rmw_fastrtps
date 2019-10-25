@@ -30,6 +30,9 @@
 #include "rmw_fastrtps_cpp/publisher.hpp"
 #include "rmw_fastrtps_cpp/identifier.hpp"
 
+#include "rmw_dds_common/context.hpp"
+#include "rmw_dds_common/msg/participant_entities_info.hpp"
+
 #include "type_support_common.hpp"
 
 using Domain = eprosima::fastrtps::Domain;
@@ -77,15 +80,37 @@ rmw_create_publisher(
     return nullptr;
   }
 
-  return rmw_fastrtps_cpp::create_publisher(
+  rmw_publisher_t * publisher = rmw_fastrtps_cpp::create_publisher(
     static_cast<CustomParticipantInfo *>(node->context->impl->participant_info),
     type_supports,
     topic_name,
     qos_policies,
-    node->namespace_,
-    node->name,
     false,
     true);
+  if (!publisher) {
+    return nullptr;
+  }
+
+  auto common_context = static_cast<rmw_dds_common::Context *>(node->context->impl->common);
+  auto info = static_cast<const CustomPublisherInfo *>(publisher->data);
+  {
+    // Update graph
+    std::lock_guard<std::mutex> guard(common_context->node_update_mutex);
+    rmw_dds_common::msg::ParticipantEntitiesInfo msg =
+      common_context->graph_cache.associate_writer(
+      info->publisher_gid, common_context->gid, node->name, node->namespace_);
+    rmw_ret_t rmw_ret = rmw_fastrtps_shared_cpp::__rmw_publish(
+      eprosima_fastrtps_identifier,
+      common_context->pub,
+      static_cast<void *>(&msg),
+      nullptr);
+    if (RMW_RET_OK != rmw_ret) {
+      rmw_fastrtps_shared_cpp::__rmw_destroy_publisher(
+        eprosima_fastrtps_identifier, node, publisher);
+      return nullptr;
+    }
+  }
+  return publisher;
 }
 
 rmw_ret_t

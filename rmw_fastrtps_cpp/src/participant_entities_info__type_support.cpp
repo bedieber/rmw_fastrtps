@@ -17,8 +17,8 @@
 #include "rosidl_generator_c/message_type_support_struct.h"
 // rosidl_typesupport_cpp/message_type_support.hpp is installed by rosidl_generator_cpp
 #include "rosidl_typesupport_cpp/message_type_support.hpp"
-#include "rmw_dds_common/msg/participant_custom_info__struct.hpp"
-#include "rmw_dds_common/msg/participant_custom_info__rosidl_typesupport_fastrtps_cpp.hpp"
+#include "rmw_dds_common/msg/participant_entities_info__struct.hpp"
+#include "rmw_dds_common/msg/participant_entities_info__rosidl_typesupport_fastrtps_cpp.hpp"
 #include "rmw_fastrtps_cpp/visibility_control.h"
 
 namespace rosidl_typesupport_cpp
@@ -27,10 +27,10 @@ namespace rosidl_typesupport_cpp
 template<>
 RMW_FASTRTPS_CPP_PUBLIC
 const rosidl_message_type_support_t *
-get_message_type_support_handle<rmw_dds_common::msg::ParticipantCustomInfo>()
+get_message_type_support_handle<rmw_dds_common::msg::ParticipantEntitiesInfo>()
 {
   return ROSIDL_TYPESUPPORT_INTERFACE__MESSAGE_SYMBOL_NAME(
-    rosidl_typesupport_fastrtps_cpp, rmw_dds_common, msg, ParticipantCustomInfo)();
+    rosidl_typesupport_fastrtps_cpp, rmw_dds_common, msg, ParticipantEntitiesInfo)();
 }
 
 #ifdef __cplusplus
@@ -41,9 +41,9 @@ extern "C"
 RMW_FASTRTPS_CPP_PUBLIC
 const rosidl_message_type_support_t *
 ROSIDL_TYPESUPPORT_INTERFACE__MESSAGE_SYMBOL_NAME(
-  rosidl_typesupport_cpp, rmw_dds_common, msg, ParticipantCustomInfo)()
+  rosidl_typesupport_cpp, rmw_dds_common, msg, ParticipantEntitiesInfo)()
 {
-  return get_message_type_support_handle<rmw_dds_common::msg::ParticipantCustomInfo>();
+  return get_message_type_support_handle<rmw_dds_common::msg::ParticipantEntitiesInfo>();
 }
 
 #ifdef __cplusplus
